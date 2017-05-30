@@ -1,0 +1,106 @@
+{% include 'header_full.html' %}
+{% include 'menu.html' %}
+
+<div class="container">
+	<div class="row">
+		<h1>Empleados</h1>
+		<button type="button" class="btn btn-primary"><i class="fa fa-plus-circle" aria-hidden="true" onclick="$('#modal-jefe').modal('show');"> <span>Nuevo</span></i></button>
+		<table data-toggle="table" data-search="true" data-show-export="true" data-page-size="20" data-pagination="true" data-show-pagination-switch="true" data-show-columns="true" data-mobile-responsive="true" data-sortable="true">
+			<thead>
+				<tr>
+					<th data-sortable="true">Empleado</th><th data-sortable="true">Nombre</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for empleado in empleados %}
+				<tr>
+					<td>{{ empleado.numeroEmpleado|e }}</td>
+					<td>{{ empleado.nombre|e }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</div>
+
+<div id="modal-jefe" class="modal fade">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h4 id="modal-titulo" class="modal-title">Datos de empleado</h4>
+			</div>
+			<div class="modal-body">
+				<div class="row">
+					<div class="col-xs-12">
+						<form role="form">
+	  						<div class="form-group">
+								<label>Clave <input type="text" class="form-control col-lg-3" name="numeroEmpleado"></label>
+								<label>Nombre <input type="text" class="form-control col-lg-9" name="nombre"></label>
+								<h4>Foto</h4>
+								<div class="row">
+									<div class="col-xs-4">
+										<video id="video" autoplay style="width:100%;"></video>
+										<canvas id="canvas" class="center-block"></canvas>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-success"><i class="fa fa-cloud" aria-hidden="true" onclick="guardar($('form').serializeJSON())"> <span>Guardar</span></i></button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+$('table').on('dbl-click-row.bs.table', function ( row, element ) {
+	$('form [name=numeroEmpleado]').val(element[0]);
+	$('form [name=nombre]').val(element[1]);
+	$('#modal-jefe').modal('show');
+	if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+		navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+			video.src = window.URL.createObjectURL(stream);
+			video.play();
+			$('.close').click(function(){
+				stopStream(stream);
+			});
+		});
+	}
+});
+
+function stopStream(stream) {
+	console.log('stop called');
+	stream.getVideoTracks().forEach(function (track) {
+		track.stop();
+	});
+}
+
+function guardar(form) {
+	context.drawImage(video, 0, 0, 150, 150);
+	loader.show()
+	sincco.consumirAPI('POST',BASE_URL + 'empleados/asignafoto',{data:form, foto:canvas.toDataURL()})
+	.done(function(data) {
+		loader.hide()
+		if(data.respuesta) {
+			window.location = BASE_URL + 'empleados'
+		} else {
+			toastr.warning('Error al guardar la foto del empleado.', 'Intenta de nuevo')
+		}
+	}).fail(function(jqXHR, textStatus, errorThrown) {
+		console.log(errorThrown);
+		toastr.error('Error al hacer la petición.', 'Intenta de nuevo')
+		loader.hide()
+	})
+}
+
+var canvas = document.getElementById('canvas');
+var context = canvas.getContext('2d');
+var video = document.getElementById('video');
+
+</script>
+
+{% include 'footer_full.html' %}
